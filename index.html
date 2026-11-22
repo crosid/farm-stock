@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>농산물 재고·납기 관리</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2f7d4f">
+<link rel="icon" href="icon.svg">
+<style>
+:root{--bg:#f4f6f3;--card:#fff;--text:#1d2a22;--sub:#6b7a70;--line:#e2e8e3;--green:#2f7d4f;--greenbg:#e6f3ea;--red:#c8372d;--redbg:#fbe9e7;--blue:#2a6fb0;--bluebg:#e5f0fa;--amber:#b7791f;--amberbg:#fdf3dc}
+@media (prefers-color-scheme:dark){:root{--bg:#121714;--card:#1c241f;--text:#e8efe9;--sub:#93a398;--line:#2b362f;--green:#5bbd83;--greenbg:#1d3326;--red:#ff7b6e;--redbg:#3a1f1c;--blue:#6aaeea;--bluebg:#1b2e40;--amber:#e3b155;--amberbg:#3a2f16}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;font-size:16px}
+#app{max-width:520px;margin:0 auto;min-height:100vh;padding:0 14px calc(150px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 2px 10px}
+header h1{font-size:19px;margin:0}
+.iconbtn{background:var(--card);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:8px 11px;font-size:14px}
+h2{font-size:15px;margin:20px 2px 8px;color:var(--sub);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.row{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row.tap{cursor:pointer}
+.grow{flex:1;min-width:0}
+.name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sub{font-size:13px;color:var(--sub);margin-top:2px}
+.big{font-weight:700;font-size:17px;text-align:right;white-space:nowrap}
+.neg{color:var(--red)}.low{color:var(--amber)}
+.badge{display:inline-block;font-size:12px;font-weight:600;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.b-sale{background:var(--bluebg);color:var(--blue)}.b-supply{background:var(--amberbg);color:var(--amber)}.b-in{background:var(--greenbg);color:var(--green)}.b-adj{background:var(--line);color:var(--sub)}
+.b-plan{background:var(--redbg);color:var(--red)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{padding:12px 14px}.stat .v{font-size:19px;font-weight:700;margin-top:4px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:999px;padding:7px 13px;font-size:14px}
+.chip.on{background:var(--green);border-color:var(--green);color:#fff}
+.btn{border:0;border-radius:12px;padding:13px 16px;font-size:16px;font-weight:600;background:var(--green);color:#fff;width:100%}
+.btn.ghost{background:var(--card);color:var(--text);border:1px solid var(--line)}
+.btn.danger{background:var(--redbg);color:var(--red)}
+.btn.small{width:auto;padding:8px 12px;font-size:14px}
+.empty{padding:26px 16px;text-align:center;color:var(--sub);line-height:1.6}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav .in{max-width:520px;margin:0 auto;display:flex}
+nav button{flex:1;border:0;background:none;color:var(--sub);padding:9px 0 8px;font-size:12px}
+nav button span{display:block;font-size:20px;line-height:1.2}
+nav button.on{color:var(--green);font-weight:700}
+.fab{position:fixed;right:max(16px,calc(50% - 244px));bottom:calc(74px + env(safe-area-inset-bottom));z-index:6;border:0;background:var(--green);color:#fff;border-radius:999px;padding:14px 20px;font-size:16px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:520px;max-height:92vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
+.sheet h3{margin:0 0 12px;font-size:18px;display:flex;justify-content:space-between;align-items:center}
+label{display:block;font-size:13px;color:var(--sub);margin:12px 0 5px}
+input,select,textarea{width:100%;font-size:16px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);font-family:inherit}
+textarea{min-height:110px}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.seg button{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:10px 0;font-size:14px;font-weight:600}
+.seg button.on{background:var(--green);border-color:var(--green);color:#fff}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.inl{display:flex;gap:8px;align-items:center}.inl input[type=checkbox]{width:22px;height:22px;flex:none}
+.total{margin-top:14px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:12px;display:flex;justify-content:space-between;font-weight:700}
+.warn{margin:8px 0;padding:10px 12px;border-radius:10px;background:var(--amberbg);color:var(--amber);font-size:13px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(130px + env(safe-area-inset-bottom));background:#222;color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;z-index:40}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 6px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--sub);font-weight:600}
+.date{font-size:13px;color:var(--sub);margin:14px 2px 6px;font-weight:600}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+//#LOGIC-START
+const KEY='nongsan-v1';
+const TYPES={
+  sale:{label:'매장판매',sign:-1,cls:'b-sale'},
+  supply:{label:'업체납기',sign:-1,cls:'b-supply'},
+  in:{label:'농장입고',sign:1,cls:'b-in'},
+  adjust:{label:'재고조정',sign:1,cls:'b-adj'}
+};
+const UNITS=['개','박스','단','망','Kg','g','L','mL'];
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const pad=n=>String(n).padStart(2,'0');
+const dstr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>dstr(new Date());
+const num=v=>{const n=parseFloat(String(v).replace(/,/g,''));return isNaN(n)?0:n};
+const round3=n=>Math.round(n*1000)/1000;
+const fmtQty=n=>{n=round3(n);return n.toLocaleString('ko-KR',{maximumFractionDigits:3})};
+const fmtWon=n=>Math.round(n).toLocaleString('ko-KR')+'원';
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// 재고에 미치는 수량 (예정 납기는 아직 재고에서 빠지지 않음)
+function delta(t){
+  if(t.type==='adjust')return t.qty;
+  if(t.type==='supply'&&t.done===false)return 0;
+  return TYPES[t.type].sign*t.qty;
+}
+const amount=t=>t.type==='adjust'?0:t.qty*t.price;
+function stockOf(db,pid){return round3(db.tx.filter(t=>t.productId===pid).reduce((s,t)=>s+delta(t),0))}
+function plannedOut(db,pid){return round3(db.tx.filter(t=>t.productId===pid&&t.type==='supply'&&t.done===false).reduce((s,t)=>s+t.qty,0))}
+// 농장에서 가져와야 할 양 = 기준재고 + 예정납기 - 현재재고
+function needOf(db,p){
+  const min=p.minStock||0;
+  return round3(Math.max(0,min+plannedOut(db,p.id)-stockOf(db,p.id)));
+}
+function periodStart(period){
+  const d=new Date();
+  if(period==='today')return dstr(d);
+  if(period==='week'){d.setDate(d.getDate()-6);return dstr(d)}
+  if(period==='month')return dstr(d).slice(0,8)+'01';
+  return '0000-00-00';
+}
+function inPeriod(t,period){return t.date>=periodStart(period)&&t.date<='9999-99-99'}
+// 상품별 집계 (완료된 거래만)
+function aggregate(db,period,vendorId){
+  const out={};
+  for(const t of db.tx){
+    if(!inPeriod(t,period))continue;
+    if(t.type==='adjust')continue;
+    if(t.type==='supply'&&t.done===false)continue;
+    if(vendorId&&t.vendorId!==vendorId)continue;
+    const o=out[t.productId]||(out[t.productId]={sale:{q:0,a:0},supply:{q:0,a:0},in:{q:0,a:0}});
+    o[t.type].q+=t.qty;o[t.type].a+=amount(t);
+  }
+  return out;
+}
+function totalsByType(db,period){
+  const r={sale:0,supply:0,in:0};
+  for(const t of db.tx){
+    if(!inPeriod(t,period)||t.type==='adjust')continue;
+    if(t.type==='supply'&&t.done===false)continue;
+    r[t.type]+=amount(t);
+  }
+  return r;
+}
+function lastPrice(db,type,productId,vendorId){
+  const list=db.tx.filter(t=>t.type===type&&t.productId===productId&&(type!=='supply'||!vendorId||t.vendorId===vendorId)&&t.price>0);
+  list.sort((a,b)=>(a.date+a.id<b.date+b.id)?1:-1);
+  if(list.length)return list[0].price;
+  const p=db.products.find(x=>x.id===productId);
+  return p&&p.sellPrice&&(type==='sale'||type==='supply')?p.sellPrice:0;
+}
+//#LOGIC-END
+
+// ---------- 저장 ----------
+let storageOk=true;
+function emptyDb(){return {v:1,products:[],vendors:[],tx:[]}}
+function load(){
+  try{const s=localStorage.getItem(KEY);if(s){const d=JSON.parse(s);if(d&&d.tx)return d}}catch(e){storageOk=false}
+  return emptyDb();
+}
+let db=load();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){storageOk=false}}
+
+// ---------- UI 상태 ----------
+const ui={tab:'home',filter:'all',period:'month',vendorId:null,recProduct:null};
+const $app=document.getElementById('app');
+const pname=id=>{const p=db.products.find(x=>x.id===id);return p?p.name:'(삭제된 상품)'};
+const punit=id=>{const p=db.products.find(x=>x.id===id);return p?p.unit:''};
+const vname=id=>{const v=db.vendors.find(x=>x.id===id);return v?v.name:'(삭제된 업체)'};
+const qtyU=(q,pid)=>fmtQty(q)+' '+esc(punit(pid));
+
+function toast(msg){
+  const el=document.createElement('div');el.className='toast';el.textContent=msg;document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1800);
+}
+
+// ---------- 화면 ----------
+function render(){
+  const tabs=[['home','🏠','홈'],['rec','📒','기록'],['prod','🥬','상품'],['ven','🏢','업체'],['stat','📊','통계']];
+  let body='';
+  if(ui.tab==='home')body=viewHome();
+  else if(ui.tab==='rec')body=viewRec();
+  else if(ui.tab==='prod')body=viewProd();
+  else if(ui.tab==='ven')body=ui.vendorId?viewVendorDetail():viewVen();
+  else body=viewStat();
+  const showFab=['home','rec','stat'].includes(ui.tab);
+  $app.innerHTML=
+    '<header><h1>🌾 농산물 재고·납기</h1><button class="iconbtn" data-act="backup">백업</button></header>'+
+    (storageOk?'':'<div class="warn">이 환경에서는 저장이 막혀 있어요. 새로고침하면 데이터가 사라질 수 있으니 \'백업\'으로 복사해 두세요.</div>')+
+    body+
+    (showFab?'<button class="fab" data-act="new-entry">＋ 기록</button>':'')+
+    '<nav><div class="in">'+tabs.map(t=>'<button class="'+(ui.tab===t[0]?'on':'')+'" data-act="tab" data-v="'+t[0]+'"><span>'+t[1]+'</span>'+t[2]+'</button>').join('')+'</div></nav>';
+}
+
+function viewHome(){
+  if(!db.products.length){
+    return '<div class="card empty">아직 등록된 상품이 없어요.<br>① 상품 등록 → ② 업체 등록 → ③ 기록 입력 순서로 쓰면 돼요.<br><br>'+
+      '<button class="btn" data-act="new-product">＋ 상품 등록하기</button><div style="height:10px"></div>'+
+      '<button class="btn ghost" data-act="seed">예시 데이터로 먼저 써보기</button></div>';
+  }
+  const t=totalsByType(db,'today');
+  const needs=db.products.map(p=>({p,need:needOf(db,p)})).filter(x=>x.need>0);
+  let h='<div class="grid"><div class="card stat"><div class="sub">오늘 매장판매</div><div class="v">'+fmtWon(t.sale)+'</div></div>'+
+    '<div class="card stat"><div class="sub">오늘 업체납기</div><div class="v">'+fmtWon(t.supply)+'</div></div></div>';
+  h+='<h2>🚜 농장에서 가져올 것</h2>';
+  if(needs.length){
+    h+='<div class="card">'+needs.map(({p,need})=>
+      '<div class="row"><div class="grow"><div class="name">'+esc(p.name)+'</div><div class="sub">현재 '+qtyU(stockOf(db,p.id),p.id)+' · 기준 '+qtyU(p.minStock||0,p.id)+
+      (plannedOut(db,p.id)?' · 예정납기 '+qtyU(plannedOut(db,p.id),p.id):'')+'</div></div>'+
+      '<div class="big neg">'+qtyU(need,p.id)+'</div>'+
+      '<button class="btn small" data-act="in-need" data-id="'+p.id+'" data-q="'+need+'">입고</button></div>').join('')+'</div>';
+  }else{
+    const hasMin=db.products.some(p=>p.minStock>0);
+    h+='<div class="card empty">'+(hasMin?'부족한 품목이 없어요 👍':'상품에 <b>기준재고</b>를 넣으면 부족분이 여기에 자동으로 나와요.')+'</div>';
+  }
+  h+='<h2>📦 현재 재고</h2><div class="card">'+db.products.map(p=>{
+    const s=stockOf(db,p.id);const low=p.minStock>0&&s<p.minStock;
+    return '<div class="row tap" data-act="rec-of" data-id="'+p.id+'"><div class="grow"><div class="name">'+esc(p.name)+'</div></div><div class="big '+(s<0?'neg':low?'low':'')+'">'+qtyU(s,p.id)+'</div></div>';
+  }).join('')+'</div>';
+  return h;
+}
+
+function viewRec(){
+  let list=db.tx.slice();
+  if(ui.filter!=='all')list=list.filter(t=>t.type===ui.filter);
+  if(ui.recProduct)list=list.filter(t=>t.productId===ui.recProduct);
+  list.sort((a,b)=>(a.date+a.id<b.date+b.id)?1:-1);
+  list=list.slice(0,300);
+  const f=[['all','전체'],['sale','매장판매'],['supply','업체납기'],['in','농장입고'],['adjust','조정']];
+  let h='<div class="chips">'+f.map(x=>'<button class="chip '+(ui.filter===x[0]?'on':'')+'" data-act="filter" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
+  if(ui.recProduct)h+='<div class="chips"><button class="chip on" data-act="clear-prod">상품: '+esc(pname(ui.recProduct))+' ✕</button></div>';
+  if(!list.length)return h+'<div class="card empty">기록이 없어요.<br>아래 ＋ 기록 버튼으로 추가하세요.</div>';
+  let last='';
+  for(const t of list){
+    if(t.date!==last){h+=(last?'</div>':'')+'<div class="date">'+esc(t.date)+'</div><div class="card">';last=t.date}
+    h+=rowTx(t);
+  }
+  return h+'</div>';
+}
+function rowTx(t){
+  const ty=TYPES[t.type];
+  const sub=t.type==='supply'?esc(vname(t.vendorId)):'';
+  const memo=t.memo?(sub?' · ':'')+esc(t.memo):'';
+  const detail=t.type==='adjust'?'':(' × '+fmtWon(t.price)+' = '+fmtWon(amount(t)));
+  return '<div class="row tap" data-act="edit-tx" data-id="'+t.id+'"><div><span class="badge '+ty.cls+'">'+ty.label+'</span></div>'+
+    '<div class="grow"><div class="name">'+esc(pname(t.productId))+(t.type==='supply'&&t.done===false?' <span class="badge b-plan">예정</span>':'')+'</div>'+
+    '<div class="sub">'+(sub||memo?sub+memo:'')+'</div></div>'+
+    '<div style="text-align:right"><div style="font-weight:700">'+(t.type==='adjust'&&t.qty>0?'+':'')+qtyU(t.qty,t.productId)+'</div>'+
+    (t.type==='adjust'?'':'<div class="sub">'+fmtWon(amount(t))+'</div>')+'</div></div>';
+}
+
+function viewProd(){
+  let h='<button class="btn" data-act="new-product">＋ 상품 등록</button><div style="height:12px"></div>';
+  if(!db.products.length)return h+'<div class="card empty">상품을 등록하면 단위(개·Kg·g·L 등)와 기준재고를 정할 수 있어요.</div>';
+  h+='<div class="card">'+db.products.map(p=>
+    '<div class="row tap" data-act="edit-product" data-id="'+p.id+'"><div class="grow"><div class="name">'+esc(p.name)+' <span class="sub">('+esc(p.unit)+')</span></div>'+
+    '<div class="sub">기준재고 '+(p.minStock?qtyU(p.minStock,p.id):'-')+' · 판매가 '+(p.sellPrice?fmtWon(p.sellPrice)+'/'+esc(p.unit):'-')+'</div></div>'+
+    '<div class="big">'+qtyU(stockOf(db,p.id),p.id)+'</div></div>').join('')+'</div>';
+  return h;
+}
+
+function viewVen(){
+  let h='<button class="btn" data-act="new-vendor">＋ 업체 등록</button><div style="height:12px"></div>';
+  if(!db.vendors.length)return h+'<div class="card empty">납기하는 업체(A, B, C…)를 등록하세요.</div>';
+  h+='<div class="card">'+db.vendors.map(v=>{
+    const tx=db.tx.filter(t=>t.type==='supply'&&t.vendorId===v.id&&t.done!==false);
+    const sum=tx.reduce((s,t)=>s+amount(t),0);
+    const plan=db.tx.filter(t=>t.type==='supply'&&t.vendorId===v.id&&t.done===false).length;
+    return '<div class="row tap" data-act="open-vendor" data-id="'+v.id+'"><div class="grow"><div class="name">'+esc(v.name)+'</div><div class="sub">납기 '+tx.length+'건'+(plan?' · 예정 '+plan+'건':'')+'</div></div><div class="big">'+fmtWon(sum)+'</div></div>';
+  }).join('')+'</div>';
+  return h;
+}
+
+const periods=[['today','오늘'],['week','7일'],['month','이번달'],['all','전체']];
+const chipsPeriod=()=>'<div class="chips">'+periods.map(x=>'<button class="chip '+(ui.period===x[0]?'on':'')+'" data-act="period" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
+
+function viewVendorDetail(){
+  const v=db.vendors.find(x=>x.id===ui.vendorId);
+  if(!v){ui.vendorId=null;return viewVen()}
+  const ag=aggregate(db,ui.period,v.id);
+  const ids=Object.keys(ag);
+  let total=0;ids.forEach(id=>total+=ag[id].supply.a);
+  let h='<div style="display:flex;gap:8px;margin-bottom:10px"><button class="iconbtn" data-act="back-vendors">← 목록</button><button class="iconbtn" data-act="edit-vendor" data-id="'+v.id+'">업체 수정</button></div>'+
+    '<div class="card stat"><div class="sub">'+esc(v.name)+' 납기 합계</div><div class="v">'+fmtWon(total)+'</div></div>'+chipsPeriod()+
+    '<h2>품목별 납기 내역</h2>';
+  if(!ids.length)h+='<div class="card empty">이 기간 납기 기록이 없어요.</div>';
+  else h+='<div class="card" style="padding:6px 10px"><table><tr><th>품목</th><th>수량</th><th>평균단가</th><th>금액</th></tr>'+ids.map(id=>{
+    const s=ag[id].supply;return '<tr><td>'+esc(pname(id))+'</td><td>'+qtyU(s.q,id)+'</td><td>'+(s.q?fmtWon(s.a/s.q):'-')+'</td><td>'+fmtWon(s.a)+'</td></tr>'}).join('')+'</table></div>';
+  const plan=db.tx.filter(t=>t.type==='supply'&&t.vendorId===v.id&&t.done===false).sort((a,b)=>a.date<b.date?-1:1);
+  if(plan.length)h+='<h2>예정 납기</h2><div class="card">'+plan.map(rowTx).join('')+'</div>';
+  const rec=db.tx.filter(t=>t.type==='supply'&&t.vendorId===v.id&&t.done!==false).sort((a,b)=>(a.date+a.id<b.date+b.id)?1:-1).slice(0,30);
+  if(rec.length)h+='<h2>최근 납기 기록</h2><div class="card">'+rec.map(rowTx).join('')+'</div>';
+  return h;
+}
+
+function viewStat(){
+  const t=totalsByType(db,ui.period);
+  const ag=aggregate(db,ui.period);
+  const ids=Object.keys(ag);
+  let h=chipsPeriod()+
+    '<div class="grid"><div class="card stat"><div class="sub">매장판매</div><div class="v">'+fmtWon(t.sale)+'</div></div>'+
+    '<div class="card stat"><div class="sub">업체납기</div><div class="v">'+fmtWon(t.supply)+'</div></div>'+
+    '<div class="card stat"><div class="sub">농장입고 비용</div><div class="v">'+fmtWon(t.in)+'</div></div>'+
+    '<div class="card stat"><div class="sub">판매+납기−입고</div><div class="v '+((t.sale+t.supply-t.in)<0?'neg':'')+'">'+fmtWon(t.sale+t.supply-t.in)+'</div></div></div>'+
+    '<h2>품목별</h2>';
+  if(!ids.length)h+='<div class="card empty">이 기간 기록이 없어요.</div>';
+  else h+='<div class="card" style="padding:6px 10px"><table><tr><th>품목</th><th>매장판매</th><th>업체납기</th><th>입고</th></tr>'+ids.map(id=>{
+    const a=ag[id];const c=x=>x.q?fmtQty(x.q)+'<br><span class="sub">'+fmtWon(x.a)+'</span>':'-';
+    return '<tr><td>'+esc(pname(id))+'<br><span class="sub">'+esc(punit(id))+'</span></td><td>'+c(a.sale)+'</td><td>'+c(a.supply)+'</td><td>'+c(a.in)+'</td></tr>'}).join('')+'</table></div>';
+  h+='<h2>업체별 납기</h2>';
+  const rows=db.vendors.map(v=>{const a=aggregate(db,ui.period,v.id);let s=0;Object.keys(a).forEach(k=>s+=a[k].supply.a);return {v,s}}).filter(x=>x.s>0);
+  if(!rows.length)h+='<div class="card empty">이 기간 업체 납기가 없어요.</div>';
+  else h+='<div class="card">'+rows.map(x=>'<div class="row tap" data-act="open-vendor" data-id="'+x.v.id+'"><div class="grow name">'+esc(x.v.name)+'</div><div class="big">'+fmtWon(x.s)+'</div></div>').join('')+'</div>';
+  return h;
+}
+
+// ---------- 시트(팝업) ----------
+let sheetEl=null;
+function openSheet(html){
+  closeSheet();
+  sheetEl=document.createElement('div');sheetEl.className='overlay';
+  sheetEl.innerHTML='<div class="sheet">'+html+'</div>';
+  sheetEl.addEventListener('mousedown',e=>{if(e.target===sheetEl)closeSheet()});
+  document.body.appendChild(sheetEl);
+}
+function closeSheet(){if(sheetEl){sheetEl.remove();sheetEl=null}}
+const sheetQ=s=>sheetEl&&sheetEl.querySelector(s);
+
+// 기록 입력
+let draft=null,priceTouched=false;
+function openEntry(opts){
+  if(!db.products.length){toast('먼저 상품을 등록하세요');openProduct();return}
+  const t=opts.id?db.tx.find(x=>x.id===opts.id):null;
+  draft=t?{...t,qty:String(t.qty),price:String(t.price)}:{id:null,type:opts.type||'sale',date:today(),productId:opts.productId||db.products[0].id,vendorId:db.vendors[0]?db.vendors[0].id:'',qty:opts.qty?String(opts.qty):'',price:'',done:true,memo:''};
+  priceTouched=!!t;
+  if(!t)prefillPrice();
+  drawEntry();
+}
+function prefillPrice(){
+  if(priceTouched||draft.type==='adjust')return;
+  const p=lastPrice(db,draft.type,draft.productId,draft.vendorId);
+  draft.price=p?String(p):'';
+}
+function drawEntry(){
+  const d=draft,isAdj=d.type==='adjust',isSup=d.type==='supply';
+  const unit=punit(d.productId);
+  openSheet(
+    '<h3>'+(d.id?'기록 수정':'기록 추가')+'<button class="iconbtn" data-act="close">닫기</button></h3>'+
+    '<div class="seg">'+Object.keys(TYPES).map(k=>'<button class="'+(d.type===k?'on':'')+'" data-act="e-type" data-v="'+k+'">'+TYPES[k].label+'</button>').join('')+'</div>'+
+    '<div class="two"><div><label>날짜</label><input type="date" id="e-date" value="'+esc(d.date)+'"></div>'+
+    '<div><label>상품</label><select id="e-prod" data-act="e-prod">'+db.products.map(p=>'<option value="'+p.id+'"'+(p.id===d.productId?' selected':'')+'>'+esc(p.name)+' ('+esc(p.unit)+')</option>').join('')+'</select></div></div>'+
+    (isSup?'<label>납기 업체</label>'+(db.vendors.length?'<select id="e-vendor" data-act="e-vendor">'+db.vendors.map(v=>'<option value="'+v.id+'"'+(v.id===d.vendorId?' selected':'')+'>'+esc(v.name)+'</option>').join('')+'</select>':'<div class="warn">등록된 업체가 없어요. <button class="chip" data-act="new-vendor-from-entry">업체 등록</button></div>'):'')+
+    '<div class="two"><div><label>수량 ('+esc(unit)+')'+(isAdj?' · 폐기/감소는 −':'')+'</label><input id="e-qty" inputmode="decimal" placeholder="0" value="'+esc(d.qty)+'"></div>'+
+    (isAdj?'<div></div>':'<div><label>단가 (원/'+esc(unit)+')</label><input id="e-price" inputmode="decimal" placeholder="0" value="'+esc(d.price)+'"></div>')+'</div>'+
+    (isAdj?'':'<div class="total"><span>합계</span><span id="e-total">'+fmtWon(num(d.qty)*num(d.price))+'</span></div>')+
+    (isSup?'<label class="inl" style="margin-top:14px;color:var(--text);font-size:15px"><input type="checkbox" id="e-done"'+(d.done!==false?' checked':'')+'> <span style="white-space:nowrap">납기 완료</span> <span class="sub">(해제하면 \'예정\' — 재고는 아직 안 빠지고 부족분 계산에만 반영)</span></label>':'')+
+    '<label>메모</label><input id="e-memo" value="'+esc(d.memo)+'" placeholder="선택">'+
+    '<div style="height:14px"></div><button class="btn" data-act="e-save">저장</button>'+
+    (d.id?'<div style="height:8px"></div><button class="btn danger" data-act="e-del">삭제</button>':'')
+  );
+}
+function readEntryInputs(){
+  const g=id=>sheetQ('#'+id);
+  if(g('e-date'))draft.date=g('e-date').value||today();
+  if(g('e-qty'))draft.qty=g('e-qty').value;
+  if(g('e-price'))draft.price=g('e-price').value;
+  if(g('e-memo'))draft.memo=g('e-memo').value;
+  if(g('e-done'))draft.done=g('e-done').checked;
+}
+function saveEntry(){
+  readEntryInputs();
+  const d=draft;
+  const qty=num(d.qty);
+  if(!d.productId)return toast('상품을 선택하세요');
+  if(d.type==='adjust'?qty===0:qty<=0)return toast('수량을 입력하세요');
+  if(d.type==='supply'&&!d.vendorId)return toast('업체를 선택하세요');
+  const rec={id:d.id||uid(),type:d.type,date:d.date||today(),productId:d.productId,vendorId:d.type==='supply'?d.vendorId:'',qty:round3(qty),price:d.type==='adjust'?0:num(d.price),done:d.type==='supply'?d.done!==false:true,memo:d.memo.trim()};
+  if(d.id){const i=db.tx.findIndex(x=>x.id===d.id);db.tx[i]=rec}else db.tx.push(rec);
+  save();closeSheet();render();toast('저장했어요');
+}
+
+// 상품 등록
+let pdraft=null;
+function openProduct(id){
+  const p=id?db.products.find(x=>x.id===id):null;
+  pdraft=p?{...p}:{id:null,name:'',unit:'Kg',minStock:0,sellPrice:0,memo:''};
+  const custom=!UNITS.includes(pdraft.unit);
+  openSheet(
+    '<h3>'+(p?'상품 수정':'상품 등록')+'<button class="iconbtn" data-act="close">닫기</button></h3>'+
+    '<label>상품명</label><input id="p-name" value="'+esc(pdraft.name)+'" placeholder="예: 사과, 참기름">'+
+    '<label>판매 단위 (재고·가격 모두 이 단위로 관리)</label><select id="p-unit" data-act="p-unit">'+UNITS.map(u=>'<option'+(!custom&&pdraft.unit===u?' selected':'')+'>'+u+'</option>').join('')+'<option value="__c"'+(custom?' selected':'')+'>직접 입력</option></select>'+
+    '<input id="p-unit-c" style="margin-top:8px;display:'+(custom?'block':'none')+'" value="'+esc(custom?pdraft.unit:'')+'" placeholder="예: 포대, 되">'+
+    '<div class="two"><div><label>기준재고 (이 밑이면 부족)</label><input id="p-min" inputmode="decimal" value="'+(pdraft.minStock||'')+'" placeholder="0"></div>'+
+    '<div><label>기본 판매단가 (원)</label><input id="p-price" inputmode="decimal" value="'+(pdraft.sellPrice||'')+'" placeholder="0"></div></div>'+
+    '<label>메모</label><input id="p-memo" value="'+esc(pdraft.memo||'')+'" placeholder="선택">'+
+    '<div style="height:14px"></div><button class="btn" data-act="p-save">저장</button>'+
+    (p?'<div style="height:8px"></div><button class="btn danger" data-act="p-del">삭제</button>':'')
+  );
+}
+function saveProduct(){
+  const name=sheetQ('#p-name').value.trim();
+  let unit=sheetQ('#p-unit').value;if(unit==='__c')unit=sheetQ('#p-unit-c').value.trim();
+  if(!name)return toast('상품명을 입력하세요');
+  if(!unit)return toast('단위를 입력하세요');
+  const rec={id:pdraft.id||uid(),name,unit,minStock:num(sheetQ('#p-min').value),sellPrice:num(sheetQ('#p-price').value),memo:sheetQ('#p-memo').value.trim()};
+  if(pdraft.id){const i=db.products.findIndex(x=>x.id===pdraft.id);db.products[i]=rec}else db.products.push(rec);
+  save();closeSheet();render();toast('저장했어요');
+}
+
+// 업체 등록
+let vdraft=null,vFromEntry=false;
+function openVendor(id){
+  const v=id?db.vendors.find(x=>x.id===id):null;
+  vdraft=v?{...v}:{id:null,name:'',memo:''};
+  openSheet(
+    '<h3>'+(v?'업체 수정':'업체 등록')+'<button class="iconbtn" data-act="close">닫기</button></h3>'+
+    '<label>업체명</label><input id="v-name" value="'+esc(vdraft.name)+'" placeholder="예: A마트, B식당">'+
+    '<label>메모 (연락처 등)</label><input id="v-memo" value="'+esc(vdraft.memo||'')+'" placeholder="선택">'+
+    '<div style="height:14px"></div><button class="btn" data-act="v-save">저장</button>'+
+    (v?'<div style="height:8px"></div><button class="btn danger" data-act="v-del">삭제</button>':'')
+  );
+}
+function saveVendor(){
+  const name=sheetQ('#v-name').value.trim();
+  if(!name)return toast('업체명을 입력하세요');
+  const rec={id:vdraft.id||uid(),name,memo:sheetQ('#v-memo').value.trim()};
+  if(vdraft.id){const i=db.vendors.findIndex(x=>x.id===vdraft.id);db.vendors[i]=rec}else db.vendors.push(rec);
+  save();closeSheet();
+  if(vFromEntry){vFromEntry=false;draft.vendorId=rec.id;drawEntry();render();return}
+  render();toast('저장했어요');
+}
+
+// 백업
+function openBackup(){
+  openSheet(
+    '<h3>백업 / 복원<button class="iconbtn" data-act="close">닫기</button></h3>'+
+    '<div class="sub" style="margin-bottom:6px">아래 글자를 통째로 복사해서 메모장·카톡 \'나에게\'에 보관하세요. 복원할 땐 붙여넣고 \'복원\'을 누르면 돼요.</div>'+
+    '<textarea id="bk">'+esc(JSON.stringify(db))+'</textarea>'+
+    '<div class="two" style="margin-top:10px"><button class="btn ghost" data-act="bk-copy">복사</button><button class="btn" data-act="bk-restore">복원</button></div>'+
+    '<div style="height:18px"></div><button class="btn danger" data-act="bk-reset">전체 초기화</button>'
+  );
+}
+
+function seed(){
+  const P=(name,unit,minStock,sellPrice)=>({id:uid(),name,unit,minStock,sellPrice,memo:''});
+  const apple=P('사과','Kg',20,5000),cab=P('배추','개',10,4000),oil=P('참기름','L',5,30000),garlic=P('다진마늘','g',2000,15);
+  db.products=[apple,cab,oil,garlic];
+  db.vendors=['A마트','B식당','C유통'].map(n=>({id:uid(),name:n,memo:''}));
+  const [A,B,C]=db.vendors,t=today();
+  const T=(type,productId,qty,price,vendorId,done)=>db.tx.push({id:uid(),type,date:t,productId,vendorId:vendorId||'',qty,price,done:done!==false,memo:''});
+  T('in',apple.id,100,3000);T('in',cab.id,40,2000);T('in',oil.id,10,22000);T('in',garlic.id,10000,8);
+  T('sale',apple.id,12.5,5000);T('sale',cab.id,8,4000);T('sale',oil.id,2,30000);
+  T('supply',apple.id,60,3800,A.id);T('supply',cab.id,25,2800,B.id);T('supply',garlic.id,5000,10,C.id);
+  T('supply',oil.id,4,26000,B.id,false);
+  save();
+}
+
+// ---------- 이벤트 ----------
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;
+  const a=el.dataset.act,v=el.dataset.v,id=el.dataset.id;
+  if(el.tagName==='SELECT')return;
+  switch(a){
+    case 'tab':ui.tab=v;ui.vendorId=null;if(v!=='rec')ui.recProduct=null;render();window.scrollTo(0,0);break;
+    case 'filter':ui.filter=v;render();break;
+    case 'period':ui.period=v;render();break;
+    case 'clear-prod':ui.recProduct=null;render();break;
+    case 'rec-of':ui.tab='rec';ui.recProduct=id;ui.filter='all';render();window.scrollTo(0,0);break;
+    case 'new-entry':openEntry({});break;
+    case 'in-need':openEntry({type:'in',productId:id,qty:el.dataset.q});break;
+    case 'edit-tx':openEntry({id});break;
+    case 'close':closeSheet();break;
+    case 'e-type':readEntryInputs();draft.type=v;if(v==='adjust')draft.price='0';else if(draft.price==='0')draft.price='';priceTouched=false;prefillPrice();drawEntry();break;
+    case 'e-save':saveEntry();break;
+    case 'e-del':
+      if(!el.dataset.armed){el.dataset.armed='1';el.textContent='정말 삭제할까요? 한 번 더 누르면 삭제';break}
+      db.tx=db.tx.filter(x=>x.id!==draft.id);save();closeSheet();render();toast('삭제했어요');break;
+    case 'new-vendor-from-entry':readEntryInputs();vFromEntry=true;openVendor();break;
+    case 'new-product':openProduct();break;
+    case 'edit-product':openProduct(id);break;
+    case 'p-save':saveProduct();break;
+    case 'p-del':{
+      if(db.tx.some(x=>x.productId===pdraft.id)){toast('기록이 있는 상품은 삭제할 수 없어요');break}
+      if(!el.dataset.armed){el.dataset.armed='1';el.textContent='정말 삭제할까요? 한 번 더 누르면 삭제';break}
+      db.products=db.products.filter(x=>x.id!==pdraft.id);save();closeSheet();render();toast('삭제했어요');break}
+    case 'new-vendor':vFromEntry=false;openVendor();break;
+    case 'edit-vendor':openVendor(id);break;
+    case 'v-save':saveVendor();break;
+    case 'v-del':{
+      if(db.tx.some(x=>x.vendorId===vdraft.id)){toast('납기 기록이 있는 업체는 삭제할 수 없어요');break}
+      if(!el.dataset.armed){el.dataset.armed='1';el.textContent='정말 삭제할까요? 한 번 더 누르면 삭제';break}
+      db.vendors=db.vendors.filter(x=>x.id!==vdraft.id);save();closeSheet();ui.vendorId=null;render();toast('삭제했어요');break}
+    case 'open-vendor':ui.tab='ven';ui.vendorId=id;render();window.scrollTo(0,0);break;
+    case 'back-vendors':ui.vendorId=null;render();break;
+    case 'backup':openBackup();break;
+    case 'bk-copy':{
+      const ta=sheetQ('#bk');ta.select();
+      try{navigator.clipboard.writeText(ta.value).then(()=>toast('복사했어요'),()=>{document.execCommand('copy');toast('복사했어요')})}catch(err){try{document.execCommand('copy');toast('복사했어요')}catch(e2){toast('길게 눌러서 직접 복사하세요')}}
+      break}
+    case 'bk-restore':{
+      try{
+        const d=JSON.parse(sheetQ('#bk').value);
+        if(!d||!Array.isArray(d.tx)||!Array.isArray(d.products)||!Array.isArray(d.vendors))throw 0;
+        db=d;save();closeSheet();render();toast('복원했어요');
+      }catch(err){toast('형식이 올바르지 않아요')}
+      break}
+    case 'bk-reset':
+      if(!el.dataset.armed){el.dataset.armed='1';el.textContent='모든 데이터가 삭제됩니다. 한 번 더 누르면 초기화';break}
+      db=emptyDb();save();closeSheet();render();toast('초기화했어요');break;
+    case 'seed':seed();render();toast('예시 데이터를 넣었어요');break;
+  }
+});
+document.addEventListener('change',e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;
+  if(el.dataset.act==='e-prod'){readEntryInputs();draft.productId=el.value;priceTouched=false;prefillPrice();drawEntry()}
+  else if(el.dataset.act==='e-vendor'){readEntryInputs();draft.vendorId=el.value;priceTouched=false;prefillPrice();drawEntry()}
+  else if(el.dataset.act==='p-unit'){sheetQ('#p-unit-c').style.display=el.value==='__c'?'block':'none'}
+});
+document.addEventListener('input',e=>{
+  if(!sheetEl)return;
+  if(e.target.id==='e-price')priceTouched=true;
+  if(e.target.id==='e-qty'||e.target.id==='e-price'){
+    const tot=sheetQ('#e-total');
+    if(tot)tot.textContent=fmtWon(num(sheetQ('#e-qty').value)*num(sheetQ('#e-price')?sheetQ('#e-price').value:0));
+  }
+});
+
+render();
+if('serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}}
+</script>
+</body>
+</html>
